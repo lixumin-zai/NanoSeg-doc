@@ -1,5 +1,8 @@
 *__pycache__
-checkpoints
+checkpoints*
 data
 lightning_logs
 model_output
+visual
+test_images
+*.jpg

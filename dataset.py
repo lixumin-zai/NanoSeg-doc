@@ -299,9 +299,9 @@ if __name__ == "__main__":
                     axes[i, 1].set_title(f"样本 {i+1}: 掩码 (唯一值: {torch.unique(masks[i]).numpy()})")
                     axes[i, 1].axis('off')
 
-                # plt.tight_layout(rect=[0, 0.03, 1, 0.96])
-                # plt.savefig("./show_synthesized_batch_result.jpg")
-                # print("\n已生成可视化结果 'show_synthesized_batch_result.jpg'")
+                plt.tight_layout(rect=[0, 0.03, 1, 0.96])
+                plt.savefig("./show_synthesized_batch_result.jpg")
+                print("\n已生成可视化结果 'show_synthesized_batch_result.jpg'")
 
             except ImportError:
                 print("\nMatplotlib未安装，无法进行可视化。可运行 'pip install matplotlib' 安装。")
