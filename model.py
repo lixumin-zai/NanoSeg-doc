@@ -160,7 +160,7 @@ class NanoSeg(nn.Module):
         return x
 
 if __name__ == '__main__':
-    dummy_input = torch.randn(2, 3, 448, 448)
+    dummy_input = torch.randn(2, 3, 320, 320)
     model = NanoSeg(num_classes=2)
     
     # 计算参数量
@@ -171,5 +171,5 @@ if __name__ == '__main__':
     print(f"Input: {dummy_input.shape}")
     print(f"Output: {output.shape}")
     
-    assert output.shape == (2, 2, 448, 448)
+    assert output.shape == (2, 2, 320, 320)
     print("测试通过！")

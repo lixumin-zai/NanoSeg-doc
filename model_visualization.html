@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NanoSeg Architecture Diagram</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --blue-border: #2196F3;
+            --blue-bg: #E3F2FD;
+            --yellow-border: #FFC107;
+            --yellow-bg: #FFF8E1;
+            --purple-border: #9C27B0;
+            --purple-bg: #F3E5F5;
+            --green-border: #009688;
+            --green-bg: #E0F2F1;
+            --red-border: #F44336;
+            --red-bg: #FFEBEE;
+            --text-color: #37474F;
+            --arrow-color: #546E7A;
+            --sub-text: #607D8B;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: white;
+            /* Remove flex centering to allow transform scale to work naturally from top */
+            display: block;
+            padding: 40px;
+            margin: 0;
+            color: var(--text-color);
+            overflow: auto;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            border: 1px solid #ddd;
+        }
+
+        .controls button {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .controls button:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+
+        .controls input[type=range] {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        /* Wrapper for scaling */
+        #diagram-wrapper {
+            transform-origin: top center;
+            transition: transform 0.1s ease-out;
+            /* Fast transition for slider */
+            width: fit-content;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+
+        .diagram-container {
+            display: grid;
+            grid-template-columns: 280px 180px 340px;
+            grid-template-rows: repeat(7, auto);
+            gap: 40px 20px;
+            position: relative;
+            align-items: center;
+        }
+
+        .node {
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: white;
+            transition: transform 0.2s;
+        }
+
+        .node:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        .node-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 16px;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .node-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .node-detail {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .process-step {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin: 2px 0;
+            width: 95%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .process-step span:first-child {
+            color: var(--sub-text);
+            font-weight: bold;
+        }
+
+        /* Color Variants */
+        .style-input {
+            border-color: var(--blue-border);
+            background-color: var(--blue-bg);
+        }
+
+        .style-backbone {
+            border-color: var(--yellow-border);
+            background-color: var(--yellow-bg);
+        }
+
+        .style-ppm {
+            border-color: var(--green-border);
+            background-color: var(--green-bg);
+        }
+
+        .style-decoder {
+            border-color: var(--purple-border);
+            background-color: var(--purple-bg);
+        }
+
+        .style-head {
+            border-color: var(--red-border);
+            background-color: var(--red-bg);
+        }
+
+        /* Text Highlights */
+        .highlight-red {
+            color: #D32F2F;
+            font-weight: bold;
+        }
+
+        /* Specific Grid Layout */
+        #input-node {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        #head-node {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        #c1-node {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        #d1-node {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        #c2-node {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        #d2-node {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        #c3-node {
+            grid-column: 1;
+            grid-row: 4;
+        }
+
+        #d3-node {
+            grid-column: 3;
+            grid-row: 4;
+        }
+
+        #c4-node {
+            grid-column: 1;
+            grid-row: 5;
+        }
+
+        #d4-node {
+            grid-column: 3;
+            grid-row: 5;
+        }
+
+        #c5-node {
+            grid-column: 1;
+            grid-row: 6;
+        }
+
+        #ppm-node {
+            grid-column: 2;
+            grid-row: 7;
+            width: 260px;
+            justify-self: center;
+        }
+
+        /* SVG Overlay */
+        .svg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Decoder internal logic visualization */
+        .fusion-box {
+            border: 1px solid rgba(156, 39, 176, 0.3);
+            background: rgba(255, 255, 255, 0.5);
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 6px;
+            width: 100%;
+            font-family: 'Segoe UI', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Zoom Controls -->
+    <div class="controls">
+        <span style="font-size:12px; color:#666;">Zoom</span>
+        <button onclick="adjustZoom(-0.1)" title="Zoom Out">-</button>
+        <input type="range" id="zoomSlider" min="0.4" max="1.5" step="0.1" value="1.0" oninput="setZoom(this.value)">
+        <button onclick="adjustZoom(0.1)" title="Zoom In">+</button>
+        <button onclick="resetZoom()" style="width: auto; padding: 0 10px; font-size: 12px;">Reset</button>
+    </div>
+
+    <div id="diagram-wrapper">
+        <div class="diagram-container">
+            <svg class="svg-overlay" id="connections"></svg>
+
+            <!-- Input -->
+            <div id="input-node" class="node style-input">
+                <div class="node-title">Input Image</div>
+                <div class="node-detail">Shape: <span class="highlight-red">3</span> x 320 x 320</div>
+            </div>
+
+            <!-- Head -->
+            <div id="head-node" class="node style-head">
+                <div class="node-title">Segmentation Head</div>
+                <div class="process-step"><span>Input:</span> 16ch (Upsampled)</div>
+                <div class="process-step"><span>Conv:</span> 3x3 Conv→BN→ReLU</div>
+                <div class="process-step"><span>Map:</span> 1x1 Conv → Classes</div>
+                <div class="node-detail" style="margin-top:5px">Out: <span class="highlight-red">2</span> x 320 x 320
+                </div>
+            </div>
+
+            <!-- Backbone -->
+            <div id="c1-node" class="node style-backbone">
+                <div class="node-title">C1 (H/2)</div>
+                <div class="node-detail">out: <span class="highlight-red">16</span> x 160²</div>
+            </div>
+            <div id="c2-node" class="node style-backbone">
+                <div class="node-title">C2 (H/4)</div>
+                <div class="node-detail">out: <span class="highlight-red">16</span> x 80²</div>
+            </div>
+            <div id="c3-node" class="node style-backbone">
+                <div class="node-title">C3 (H/8)</div>
+                <div class="node-detail">out: <span class="highlight-red">24</span> x 40²</div>
+            </div>
+            <div id="c4-node" class="node style-backbone">
+                <div class="node-title">C4 (H/16)</div>
+                <div class="node-detail">out: <span class="highlight-red">48</span> x 20²</div>
+            </div>
+            <div id="c5-node" class="node style-backbone">
+                <div class="node-title">C5 (H/32)</div>
+                <div class="node-detail">out: <span class="highlight-red">576</span> x 10²</div>
+            </div>
+
+            <!-- PPM -->
+            <div id="ppm-node" class="node style-ppm">
+                <div class="node-title">PPM Context</div>
+                <div class="process-step"><span>Pool:</span> Global Avg → 1x1</div>
+                <div class="process-step"><span>Reduce:</span> 1x1 Conv (576→64) H/32</div>
+                <div class="process-step"><span>Fusion:</span> Concat(Original, Global)</div>
+                <div class="node-detail" style="margin-top:5px; font-weight:bold">Out: 576+64 = 640ch</div>
+            </div>
+
+            <!-- Decoders -->
+            <div id="d4-node" class="node style-decoder">
+                <div class="node-title">Decoder 4</div>
+                <div class="fusion-box">
+                    <div class="process-step"><span>Main(In):</span> Upsample 2x (H/32→H/16)</div>
+                    <div class="process-step"><span>Skip(c4):</span> 1x1 Conv (48→32ch)</div>
+                    <div class="process-step" style="background:#E1BEE7; justify-content:center; font-weight:bold;">
+                        Concat: 640 + 32 = 672ch
+                    </div>
+                </div>
+                <div class="process-step"><span>Conv:</span> Depthwise (672→64)</div>
+                <div class="node-detail">Out: <span class="highlight-red">64</span> x 20 x 20</div>
+            </div>
+
+            <div id="d3-node" class="node style-decoder">
+                <div class="node-title">Decoder 3</div>
+                <div class="fusion-box">
+                    <div class="process-step"><span>Main(In):</span> Upsample 2x (H/16→H/8)</div>
+                    <div class="process-step"><span>Skip(c3):</span> 1x1 Conv (24→32ch)</div>
+                    <div class="process-step" style="background:#E1BEE7; justify-content:center; font-weight:bold;">
+                        Concat: 64 + 32 = 96ch
+                    </div>
+                </div>
+                <div class="process-step"><span>Conv:</span> Depthwise (96→64)</div>
+                <div class="node-detail">Out: <span class="highlight-red">64</span> x 40 x 40</div>
+            </div>
+
+            <div id="d2-node" class="node style-decoder">
+                <div class="node-title">Decoder 2</div>
+                <div class="fusion-box">
+                    <div class="process-step"><span>Main(In):</span> Upsample 2x (H/8→H/4)</div>
+                    <div class="process-step"><span>Skip(c2):</span> 1x1 Conv (16→16ch)</div>
+                    <div class="process-step" style="background:#E1BEE7; justify-content:center; font-weight:bold;">
+                        Concat: 64 + 16 = 80ch
+                    </div>
+                </div>
+                <div class="process-step"><span>Conv:</span> Depthwise (80→32)</div>
+                <div class="node-detail">Out: <span class="highlight-red">32</span> x 80 x 80</div>
+            </div>
+
+            <div id="d1-node" class="node style-decoder">
+                <div class="node-title">Decoder 1</div>
+                <div class="fusion-box">
+                    <div class="process-step"><span>Main(In):</span> Upsample 2x (H/4→H/2)</div>
+                    <div class="process-step"><span>Skip(c1):</span> 1x1 Conv (16→8ch)</div>
+                    <div class="process-step" style="background:#E1BEE7; justify-content:center; font-weight:bold;">
+                        Concat: 32 + 8 = 40ch
+                    </div>
+                </div>
+                <div class="process-step"><span>Conv:</span> Depthwise (40→16)</div>
+                <div class="node-detail">Out: <span class="highlight-red">16</span> x 160 x 160</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentZoom = 1.0;
+
+        function setZoom(val) {
+            currentZoom = parseFloat(val);
+            updateZoom();
+        }
+
+        function adjustZoom(delta) {
+            currentZoom = Math.max(0.4, Math.min(1.5, currentZoom + delta));
+            currentZoom = Math.round(currentZoom * 10) / 10;
+            document.getElementById('zoomSlider').value = currentZoom;
+            updateZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1.0;
+            document.getElementById('zoomSlider').value = 1.0;
+            updateZoom();
+        }
+
+        function updateZoom() {
+            const wrapper = document.getElementById('diagram-wrapper');
+            wrapper.style.transform = `scale(${currentZoom})`;
+
+            // Re-render arrows if zoom changes drastically? 
+            // Actually scale transform scales everything including SVG, so it remains correct visually.
+            // But we might need to adjust margin bottom since scaled element takes less 'flow' space?
+            // "transform" doesn't affect flow, so if we shrink, there's whitespace.
+            // We can adjust height if needed, but for now simple scale is enough for "viewing".
+        }
+
+        function drawArrow(startId, endId, color = "#546E7A", dashed = false, label = "") {
+            const start = document.getElementById(startId);
+            const end = document.getElementById(endId);
+            const svg = document.getElementById('connections');
+
+            const startRect = start.getBoundingClientRect();
+            const endRect = end.getBoundingClientRect();
+            const containerRect = document.querySelector('.diagram-container').getBoundingClientRect();
+
+            // IMPORTANT: Calculations must be relative to the container's unscaled size
+            // But getBoundingClientRect returns scaled values if transform is active.
+            // Luckily, offsets relative to container should remain proportional?
+            // If the container is scaled, both containerRect and startRect are scaled.
+            // So (start.left - container.left) is the SCALED distance.
+            // But the SVG coordinate system is also scaled by the parent transform.
+            // So we can use the raw rect values directly, because the SVG 'user units' 
+            // share the same coordinate space as the DOM elements inside the transform.
+
+            const x1 = startRect.left + startRect.width / 2 - containerRect.left;
+            const y1 = startRect.top + startRect.height / 2 - containerRect.top;
+            const x2 = endRect.left + endRect.width / 2 - containerRect.left;
+            const y2 = endRect.top + endRect.height / 2 - containerRect.top;
+
+            // Wait, if we use getBoundingClientRect on a scaled element, 
+            // the returned values are the actual screen pixels.
+            // But the SVG internal coordinate system (viewBox or default units) 
+            // is determined by its width/height attributes or CSS width/height.
+            // If SVG is 100% width of container, and container is SCALED, 
+            // then 1 unit in SVG = 1 px / scale? No.
+
+            // Actually, because the SVG is INSIDE the transformed wrapper, 
+            // we should perform calculation assuming scale=1.
+            // We can use offsetLeft/offsetTop which are not affected by transform scale usually?
+            // Simpler: Just rely on offsetLeft/Top recursively.
+
+            // Let's rewrite the position logic to be robust against Zoom.
+            // If we use offsetLeft/Top relative to the .diagram-container, it's safer.
+
+            const container = document.querySelector('.diagram-container');
+
+            const getCenter = (element) => {
+                let x = element.offsetLeft + element.offsetWidth / 2;
+                let y = element.offsetTop + element.offsetHeight / 2;
+                // If nested? Assuming simple nesting here inside grid
+                return { x, y };
+            };
+
+            const p1 = getCenter(start);
+            const p2 = getCenter(end);
+
+            const x1_ = p1.x;
+            const y1_ = p1.y;
+            const x2_ = p2.x;
+            const y2_ = p2.y;
+
+            // Use these localized coordinates
+            // This is much safer because it ignores the transform of the parent wrapper.
+
+            let d = "";
+            const startH = start.offsetHeight;
+            const endH = end.offsetHeight;
+            const startW = start.offsetWidth;
+            const endW = end.offsetWidth;
+
+            if (Math.abs(x1_ - x2_) < 10) {
+                if (y2_ > y1_) d = `M ${x1_} ${y1_ + startH / 2} L ${x2_} ${y2_ - endH / 2 - 5}`;
+                else d = `M ${x1_} ${y1_ - startH / 2} L ${x2_} ${y2_ + endH / 2 + 5}`;
+            }
+            else if (Math.abs(y1_ - y2_) < 30 && dashed) {
+                d = `M ${x1_ + startW / 2} ${y1_} L ${x2_ - endW / 2 - 5} ${y2_}`;
+            }
+            else {
+                if (startId === 'c5-node' && endId === 'ppm-node') {
+                    d = `M ${x1_} ${y1_ + startH / 2} L ${x1_} ${y2_} L ${x2_ - endW / 2 - 5} ${y2_}`;
+                } else if (startId === 'ppm-node' && endId === 'd4-node') {
+                    d = `M ${x1_ + startW / 2} ${y1_} L ${x2_} ${y1_} L ${x2_} ${y2_ + endH / 2 + 5}`;
+                }
+            }
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", d);
+            path.setAttribute("stroke", color);
+            path.setAttribute("stroke-width", "2");
+            path.setAttribute("fill", "none");
+
+            if (dashed) {
+                path.setAttribute("stroke-dasharray", "5, 5");
+                path.setAttribute("marker-end", "url(#arrow-dash)");
+                path.setAttribute("stroke", "#90A4AE");
+            } else {
+                path.setAttribute("marker-end", "url(#arrow)");
+            }
+
+            svg.appendChild(path);
+
+            if (label && dashed) {
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                const textX = (x1_ + startW / 2 + x2_ - endW / 2) / 2;
+                const textY = y1_ - 8;
+                text.setAttribute("x", textX);
+                text.setAttribute("y", textY);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("fill", "#78909C");
+                text.setAttribute("font-size", "11px");
+                text.textContent = label;
+                svg.appendChild(text);
+            }
+        }
+
+        window.onload = function () {
+            // First clear manually if re-run
+            document.getElementById('connections').innerHTML = `
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#546E7A" />
+                </marker>
+                <marker id="arrow-dash" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#90A4AE" />
+                </marker>
+            </defs>`;
+
+            drawArrow('input-node', 'c1-node');
+            drawArrow('c1-node', 'c2-node');
+            drawArrow('c2-node', 'c3-node');
+            drawArrow('c3-node', 'c4-node');
+            drawArrow('c4-node', 'c5-node');
+            drawArrow('c5-node', 'ppm-node');
+            drawArrow('ppm-node', 'd4-node');
+            drawArrow('d4-node', 'd3-node');
+            drawArrow('d3-node', 'd2-node');
+            drawArrow('d2-node', 'd1-node');
+            drawArrow('d1-node', 'head-node');
+
+            drawArrow('c4-node', 'd4-node', null, true, "Skip: H/16");
+            drawArrow('c3-node', 'd3-node', null, true, "Skip: H/8");
+            drawArrow('c2-node', 'd2-node', null, true, "Skip: H/4");
+            drawArrow('c1-node', 'd1-node', null, true, "Skip: H/2");
+        };
+
+        window.onresize = window.onload;
+    </script>
+</body>
+
+</html>

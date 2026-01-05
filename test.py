@@ -96,6 +96,14 @@ def visualize(original_image, mask, num_classes):
     plt.savefig("./result.jpg")
 
 
+def export_onnx():
+    trained_model = SegModel.load_from_checkpoint("/home/lixumin/project/nanoseg/checkpointsv1/nanoseg-epoch=03-val_iou=0.99.ckpt")
+    # # 导出到 ONNX
+    dummy_input = torch.randn(1, 3, 320, 320)
+    trained_model.to_onnx("nanoseg.onnx", dummy_input, export_params=True)
+    print("模型已导出到 nanoseg.onnx")
+
+
 if __name__ == '__main__':
     # --- 设置命令行参数 ---
     parser = argparse.ArgumentParser(description="Inference script for NanoSeg model.")
@@ -105,7 +113,7 @@ if __name__ == '__main__':
 
     # --- 配置 ---
     NUM_CLASSES = 2 # 必须与训练时一致
-    IMG_SIZE = (224, 224)
+    IMG_SIZE = (320, 320)
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # --- 定义推理时用的数据变换 ---
